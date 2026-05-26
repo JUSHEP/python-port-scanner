@@ -1,48 +1,66 @@
 import socket
-from datetime import datetime
+import time
+from colorama import Fore, Style, init
 
-target = input("Enter target IP or domain: ")
+init(autoreset=True)
 
-print("-" * 50)
-print(f"Scanning target: {target}")
-print(f"Time started: {datetime.now()}")
-print("-" * 50)
+BANNER = f"""
+{Fore.CYAN}
+██████╗  ██████╗ ██████╗ ████████╗
+██╔══██╗██╔═══██╗██╔══██╗╚══██╔══╝
+██████╔╝██║   ██║██████╔╝   ██║
+██╔═══╝ ██║   ██║██╔══██╗   ██║
+██║     ╚██████╔╝██║  ██║   ██║
+╚═╝      ╚═════╝ ╚═╝  ╚═╝   ╚═╝
+
+███████╗ ██████╗ █████╗ ███╗   ██╗
+██╔════╝██╔════╝██╔══██╗████╗  ██║
+███████╗██║     ███████║██╔██╗ ██║
+╚════██║██║     ██╔══██║██║╚██╗██║
+███████║╚██████╗██║  ██║██║ ╚████║
+╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝
+"""
+
+print(BANNER)
+
+target = input(f"{Fore.YELLOW}Enter target IP or hostname: ")
 
 try:
     target_ip = socket.gethostbyname(target)
+except socket.gaierror:
+    print(f"{Fore.RED}Invalid hostname or IP address.")
+    exit()
 
-    common_ports = {
-        21: "FTP",
-        22: "SSH",
-        23: "Telnet",
-        25: "SMTP",
-        53: "DNS",
-        80: "HTTP",
-        110: "POP3",
-        139: "NetBIOS",
-        143: "IMAP",
-        443: "HTTPS",
-        445: "SMB",
-        3306: "MySQL",
-        3389: "RDP"
-    }
+start_port = int(input(f"{Fore.YELLOW}Start port: "))
+end_port = int(input(f"{Fore.YELLOW}End port: "))
 
-    for port, service in common_ports.items():
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(1)
+print(f"\n{Fore.CYAN}Scanning target: {target_ip}")
+print(f"{Fore.CYAN}Port range: {start_port}-{end_port}")
+print(f"{Fore.CYAN}Starting scan...\n")
 
-        result = sock.connect_ex((target_ip, port))
+start_time = time.time()
+
+try:
+    for port in range(start_port, end_port + 1):
+        scanner = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        scanner.settimeout(0.5)
+
+        result = scanner.connect_ex((target_ip, port))
 
         if result == 0:
-            print(f"[OPEN] Port {port} ({service})")
+            print(f"{Fore.GREEN}[OPEN] Port {port}")
 
-        sock.close()
-
-except socket.gaierror:
-    print("Hostname could not be resolved.")
+        scanner.close()
 
 except KeyboardInterrupt:
-    print("\nScan interrupted.")
+    print(f"\n{Fore.RED}Scan interrupted by user.")
+    exit()
 
 except Exception as e:
-    print(f"Error: {e}")
+    print(f"{Fore.RED}Error: {e}")
+
+end_time = time.time()
+total_time = round(end_time - start_time, 2)
+
+print(f"\n{Fore.MAGENTA}Scan completed in {total_time} seconds.")
+print(Style.RESET_ALL)
